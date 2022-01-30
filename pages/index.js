@@ -52,9 +52,8 @@ const HomePage = () => {
           {/* Formulário */}
           <Box
             as="form"
-            onSubmit={function (infosDoEvento) {
+            onSubmit={(infosDoEvento) => {
               infosDoEvento.preventDefault();
-              console.log('Alguém submeteu o form');
               roteamento.push('/chat');
               // window.location.href = '/chat';
             }}
