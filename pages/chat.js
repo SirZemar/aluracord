@@ -1,23 +1,54 @@
 import { Box, Text, TextField, Image, Button } from '@skynexui/components';
-import React, { useState } from 'react';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import React, { useEffect, useState } from 'react';
 import appConfig from '../config.json';
+import HomePage from '.';
+
+const SUPABASE_URL = 'https://iricuibhafwpxwjaiddj.supabase.co';
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_API_KEY;
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+console.log(HomePage)
 
 export default function ChatPage() {
   const [newMessage, setNewMessage] = useState('');
   const [messageHistory, setMessageHistory] = useState([]);
 
+  useEffect(() => {
+    supabaseClient
+      .from('messages')
+      .select('*')
+      .order('id', { ascending: false })
+      .then(({ data }) => {
+        setMessageHistory(data)
+      });
+  }, []);
 
   const handleNewMessage = (newMessage) => {
+    if (newMessage === '') return;
+
     const message = {
-      id: messageHistory.length,
       value: newMessage,
-      from: 'José',
+      from: 'SirZemar',
     };
 
-    setMessageHistory([
-      message,
-      ...messageHistory,
-    ]);
+    supabaseClient
+      .from('messages')
+      .insert([
+        message
+      ])
+      .then(({ data }) => {
+        setMessageHistory([
+          data[0],
+          ...messageHistory
+        ]);
+        console.log(data)
+      })
+
+    /*  setMessageHistory([
+       message,
+       ...messageHistory,
+     ]); */
     setNewMessage('');
   }
 
@@ -81,9 +112,10 @@ export default function ChatPage() {
                   handleNewMessage(newMessage);
                 }
               }}
-              placeholder="Insira sua mensagem aqui..."
+              placeholder="Type your message here..."
               type="textarea"
               styleSheet={{
+                margin: 'none',
                 width: '100%',
                 border: '0',
                 resize: 'none',
@@ -94,6 +126,14 @@ export default function ChatPage() {
                 color: appConfig.theme.colors.neutrals[200],
               }}
             />
+            <Button
+              label='Send'
+              styleSheet={{
+                height: 'calc(100% - 8px)',
+                alignSelf: 'flex-start'
+              }}
+              onClick={() => handleNewMessage(newMessage)}
+            />
           </Box>
         </Box>
       </Box>
@@ -101,7 +141,7 @@ export default function ChatPage() {
   )
 }
 
-function Header() {
+const Header = () => {
   return (
     <>
       <Box styleSheet={{ width: '100%', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: appConfig.theme.colors.pallet['color3'] }} >
@@ -120,8 +160,7 @@ function Header() {
   )
 }
 
-function MessageList({ message: messages }) {
-  console.log('MessageList', messages);
+const MessageList = ({ message: messages }) => {
   return (
     <Box
       tag="ul"
@@ -165,7 +204,7 @@ function MessageList({ message: messages }) {
                 display: 'inline-block',
                 marginRight: '8px',
               }}
-              src={`https://github.com/vanessametonini.png`}
+              src={`https://github.com/${message.from}.png`}
             />
             <Text tag="strong">
               {message.from}
@@ -181,7 +220,7 @@ function MessageList({ message: messages }) {
               {(new Date().toLocaleDateString())}
             </Text>
           </Box>
-          {message.value}
+          {message.value} {message.id === 1 && <span>you!</span>}
         </Text>
       ))}
     </Box>
