@@ -1,18 +1,31 @@
-import { Box, Text, TextField, Image, Button } from '@skynexui/components';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
+//Supabase
+import { createClient } from '@supabase/supabase-js';
+//Components
+import { ButtonSendSticker } from '../src/components/ButtonSendSticker';
+import { Box, Text, TextField, Image, Button } from '@skynexui/components';
+//Config
 import appConfig from '../config.json';
-import HomePage from '.';
 
 const SUPABASE_URL = 'https://iricuibhafwpxwjaiddj.supabase.co';
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_API_KEY;
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-console.log(HomePage)
-
+const listenRealTimeMessages = (addNewMessage) => {
+  return supabaseClient
+    .from('messages')
+    .on('INSERT', (resp) => {
+      addNewMessage(resp.new)
+    })
+    .subscribe();
+}
 export default function ChatPage() {
   const [newMessage, setNewMessage] = useState('');
+  const [sticker, setSticker] = useState('');
   const [messageHistory, setMessageHistory] = useState([]);
+  const router = useRouter();
+  const loggedUser = router.query.username;
 
   useEffect(() => {
     supabaseClient
@@ -22,14 +35,45 @@ export default function ChatPage() {
       .then(({ data }) => {
         setMessageHistory(data)
       });
+
+    const subscription = listenRealTimeMessages((addNewMessage) => {
+      setMessageHistory((prev) => {
+        return [
+          addNewMessage,
+          ...prev
+        ]
+      });
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    }
+
   }, []);
 
-  const handleNewMessage = (newMessage) => {
+  console.log(messageHistory)
+  const handleNewMessage = (newMessage, newSticker = null) => {
     if (newMessage === '') return;
+
+    if (newSticker) {
+      const sticker = {
+        sticker: newSticker,
+        from: loggedUser,
+      }
+
+      supabaseClient
+        .from('messages')
+        .insert([
+          sticker
+        ])
+        .then(() => { });
+
+      return
+    }
 
     const message = {
       value: newMessage,
-      from: 'SirZemar',
+      from: loggedUser,
     };
 
     supabaseClient
@@ -37,18 +81,8 @@ export default function ChatPage() {
       .insert([
         message
       ])
-      .then(({ data }) => {
-        setMessageHistory([
-          data[0],
-          ...messageHistory
-        ]);
-        console.log(data)
-      })
+      .then(() => { })
 
-    /*  setMessageHistory([
-       message,
-       ...messageHistory,
-     ]); */
     setNewMessage('');
   }
 
@@ -89,12 +123,7 @@ export default function ChatPage() {
           }}
         >
 
-          <MessageList message={messageHistory} />
-          {/*  {messageHistory.map((message) => (
-            <li key={message.id}>
-              {message.value}
-            </li>
-          ))} */}
+          <MessageList messages={messageHistory} loggedUser={loggedUser} />
 
           <Box
             as="form"
@@ -126,11 +155,13 @@ export default function ChatPage() {
                 color: appConfig.theme.colors.neutrals[200],
               }}
             />
+            <ButtonSendSticker onStickerClick={(newSticker) => handleNewMessage(null, newSticker)} />
             <Button
               label='Send'
               styleSheet={{
                 height: 'calc(100% - 8px)',
-                alignSelf: 'flex-start'
+                alignSelf: 'flex-start',
+                marginLeft: '12px'
               }}
               onClick={() => handleNewMessage(newMessage)}
             />
@@ -160,19 +191,26 @@ const Header = () => {
   )
 }
 
-const MessageList = ({ message: messages }) => {
+const MessageList = ({ messages, loggedUser }) => {
   return (
     <Box
       tag="ul"
       styleSheet={{
         overflow: 'scroll',
+        overflowX: 'hidden',
         display: 'flex',
         flexDirection: 'column-reverse',
         flex: 1,
         color: appConfig.theme.colors.neutrals["000"],
         marginBottom: '16px',
-        overflow: 'hidden',
-        maxWidth: '100%'
+        // overflow: 'hidden',
+        maxWidth: '100%',
+        '&::after': {
+          content: `''`,
+          display: 'block',
+          width: '100px',
+          height: '10px',
+        }
       }}
     >
       {messages.map((message) => (
@@ -220,7 +258,20 @@ const MessageList = ({ message: messages }) => {
               {(new Date().toLocaleDateString())}
             </Text>
           </Box>
-          {message.value} {message.id === 1 && <span>you!</span>}
+          {message.sticker
+            ? <Image
+              src={message.sticker}
+              alt='Sticker'
+              styleSheet={{
+                width: {
+                  xs: '70px',
+                  sm: '100px',
+                },
+              }}
+            />
+            : message.value
+          }
+          {message.id === 1 && ` ${loggedUser}`}
         </Text>
       ))}
     </Box>
