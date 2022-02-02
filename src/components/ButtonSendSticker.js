@@ -1,5 +1,7 @@
 import React from 'react';
-import { Box, Button, Text, Image } from '@skynexui/components';
+//SkynexUI
+import { Box, Button, Text } from '@skynexui/components';
+// Appconfig
 import appConfig from '../../config.json';
 
 export function ButtonSendSticker({ onStickerClick }) {
@@ -60,7 +62,7 @@ export function ButtonSendSticker({ onStickerClick }) {
                     >
                         Stickers
                     </Text>
-                    <Box
+                    <Box className='scroll-style'
                         tag="ul"
                         styleSheet={{
                             display: 'flex',

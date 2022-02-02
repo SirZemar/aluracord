@@ -1,6 +1,6 @@
 function GlobalStyle() {
   return (
-      <style global jsx>{`
+    <style global jsx>{`
     * {
       margin: 0;
       padding: 0;
@@ -16,13 +16,17 @@ function GlobalStyle() {
       display: flex;
       flex: 1;
     }
-    #__next {
+
+    #__next , #__next > * {
       flex: 1;
     }
-    #__next > * {
-      flex: 1;
-    }
+
     /* ./App fit Height */ 
+
+    .scroll-style::-webkit-scrollbar {
+      display: none;
+    }
+    
   `}</style>
   );
 }
@@ -30,9 +34,9 @@ function GlobalStyle() {
 export default function CustomApp({ Component, pageProps }) {
   console.log('Roda em todas as páginas!');
   return (
-      <>
-          <GlobalStyle />
-          <Component {...pageProps} />
-      </>
+    <>
+      <GlobalStyle />
+      <Component {...pageProps} />
+    </>
   );
 }

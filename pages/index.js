@@ -2,6 +2,8 @@ import { Box, Button, Text, TextField, Image } from '@skynexui/components';
 import React from 'react';
 import { useRouter } from 'next/router';
 import appConfig from '../config.json';
+import Background from '../src/components/Background';
+import PageContainer from '../src/components/PageContainer';
 
 const Title = ({ tag, children }) => {
   const Tag = tag || 'h1';
@@ -25,14 +27,8 @@ const HomePage = () => {
 
   return (
     <>
-      <Box
-        styleSheet={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          backgroundColor: appConfig.theme.colors.pallet['color5'],
-          backgroundImage: 'url(https://www.crunchyroll.com/animeawards/static/3e4fd37b523bddf5e0ea4f73e33ea068/4542c/particles.png)',
-          backgroundRepeat: 'no-repeat', backgroundSize: 'cover', backgroundBlendMode: 'luminosity',
-        }}
-      >
+      <PageContainer>
+        <Background />
         <Box
           styleSheet={{
             display: 'flex',
@@ -137,7 +133,7 @@ const HomePage = () => {
           </Box>
           {/* Photo Area */}
         </Box>
-      </Box>
+      </PageContainer>
     </>
   );
 }
