@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 //Supabase
 import { createClient } from '@supabase/supabase-js';
 //SkynexUI
-import { Box } from '@skynexui/components';
+import { Box, Image } from '@skynexui/components';
 //Components
 import { ButtonSendSticker } from '../src/components/ButtonSendSticker';
 import MessageList from '../src/components/MessageList';
@@ -14,6 +14,8 @@ import appConfig from '../config.json';
 import ButtonSendMessage from '../src/components/ButtonSendMessage';
 import Background from '../src/components/Background';
 import PageContainer from '../src/components/PageContainer';
+import { Main } from 'next/document';
+import MessageChannels from '../src/components/MessageChannels';
 
 const SUPABASE_URL = 'https://iricuibhafwpxwjaiddj.supabase.co';
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_API_KEY;
@@ -31,13 +33,51 @@ const listenRealTimeMessages = (addNewMessage) => {
 export default function ChatPage() {
   const [newMessage, setNewMessage] = useState('');
   const [messageHistory, setMessageHistory] = useState([]);
+  const [channel, setChannel] = useState(2);
+  const [channelList, setChannelList] = useState([]);
   const router = useRouter();
   const loggedUser = router.query.username;
+
+
+  // <CHANNELS>
+  const handleChannelClick = (channelId) => {
+    setChannel(channelId);
+  }
+  const handleAddChannel = (newName) => {
+    const newChannel = {
+      name: newName,
+    }
+    supabaseClient
+      .from('channels')
+      .insert(
+        [newChannel]
+      )
+      .then((res) => {
+        setChannelList((prev) => {
+          return [
+            ...prev,
+            res.data[0],
+          ]
+        })
+      })
+  };
+
+  useEffect(() => {
+    supabaseClient
+      .from('channels')
+      .select('*')
+      .then(({ data }) => {
+        setChannelList(data)
+      })
+  }, [])
+
+  // <CHANNELS />
 
   useEffect(() => {
     supabaseClient
       .from('messages')
       .select('*')
+      .eq('channel_id', channel)
       .order('id', { ascending: false })
       .then(({ data }) => {
         setMessageHistory(data)
@@ -56,7 +96,7 @@ export default function ChatPage() {
       subscription.unsubscribe();
     }
 
-  }, []);
+  }, [channel]);
 
   const handleNewMessage = (newMessage, newSticker = null) => {
     if (newMessage === '') return;
@@ -65,6 +105,7 @@ export default function ChatPage() {
       const sticker = {
         sticker: newSticker,
         from: loggedUser,
+        channel_id: channel,
       }
 
       supabaseClient
@@ -80,6 +121,7 @@ export default function ChatPage() {
     const message = {
       value: newMessage,
       from: loggedUser,
+      channel_id: channel,
     };
 
     supabaseClient
@@ -98,44 +140,55 @@ export default function ChatPage() {
       <Box
         styleSheet={{
           display: 'flex',
-          flexDirection: 'column',
-          boxShadow: '0 2px 10px 0 rgb(0 0 0 / 20%)',
-          borderRadius: '5px',
-          backgroundColor: appConfig.theme.colors.pallet['color5'],
-          height: '100%',
-          width: 'min(95vw, 1200px)',
-          maxHeight: '95vh',
-          padding: '32px',
-        }}
-      >
-        <Header />
+          height: '95vh',
+          boxShadow: '0 0 10px 0 rgb(0 0 0 / 20%)',
+        }}>
+
         <Box
           styleSheet={{
-            position: 'relative',
             display: 'flex',
-            flex: 1,
-            height: '80%',
-            backgroundColor: appConfig.theme.colors.pallet['color1'],
             flexDirection: 'column',
-            borderRadius: '5px',
-            padding: '16px',
+            borderRadius: '0 5px 5px 0',
+            backgroundColor: appConfig.theme.colors.pallet['color5'],
+            width: 'min(95vw, 1200px)',
+            padding: '2rem',
+            paddingLeft: '0',
           }}
         >
-          <MessageList messages={messageHistory} loggedUser={loggedUser} />
-          <Box
-            as="form"
-            styleSheet={{
-              display: 'flex',
-              alignItems: 'center',
-            }}
-          >
-            <MessageBox onKeyEnterPress={(newMessage) => handleNewMessage(newMessage)} newMessage={newMessage} setNewMessage={(newMessage) => setNewMessage(newMessage)} />
-            <ButtonSendSticker onStickerClick={(newSticker) => handleNewMessage(null, newSticker)} />
-            <ButtonSendMessage onButtonClick={(newMessage) => handleNewMessage(newMessage)} newMessage={newMessage} />
-          </Box>
+          <Header />
+          <Box styleSheet={{
+            display: 'flex',
+            height: '95%',
+          }}>
+            <MessageChannels setChannel={(x) => handleChannelClick(x)} addChannel={(name) => handleAddChannel(name)} channelList={channelList} />
+            <Box
+              styleSheet={{
+                position: 'relative',
+                display: 'flex',
+                flex: 1,
+                backgroundColor: appConfig.theme.colors.pallet['color1'],
+                flexDirection: 'column',
+                borderRadius: '5px',
+                padding: '16px',
+              }}
+            >
+              <MessageList messages={messageHistory} loggedUser={loggedUser} />
+              <Box
+                as="form"
+                styleSheet={{
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
+                <MessageBox onKeyEnterPress={(newMessage) => handleNewMessage(newMessage)} newMessage={newMessage} setNewMessage={(newMessage) => setNewMessage(newMessage)} />
+                <ButtonSendSticker onStickerClick={(newSticker) => handleNewMessage(null, newSticker)} />
+                <ButtonSendMessage onButtonClick={(newMessage) => handleNewMessage(newMessage)} newMessage={newMessage} />
+              </Box>
 
+            </Box>
+          </Box>
         </Box>
       </Box>
-    </PageContainer>
+    </PageContainer >
   )
 }

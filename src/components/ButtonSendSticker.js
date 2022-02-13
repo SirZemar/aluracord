@@ -1,6 +1,6 @@
 import React from 'react';
 //SkynexUI
-import { Box, Button, Text } from '@skynexui/components';
+import { Box, Button, Text, Image } from '@skynexui/components';
 // Appconfig
 import appConfig from '../../config.json';
 
